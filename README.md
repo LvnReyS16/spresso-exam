@@ -24,3 +24,6 @@ Make sure you have Node.js and npm installed on your machine.
 ```bash
    npm run dev
 ```
+
+#### Note
+Only the Name column can be search in the search input
