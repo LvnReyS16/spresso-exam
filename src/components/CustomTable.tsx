@@ -2,16 +2,15 @@
 import React, { useReducer, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { State, reducer } from "../reducer";
-import { AxiosResponse } from "axios";
 
 interface TableProps {
   columns: string[];
-  fetchData: () => Promise<any[]> | Promise<AxiosResponse<any, any>>;
-  extraColumns: {
+  fetchData: () => Promise<any[]>;
+  extraColumns?: {
     header: string;
     render: (row: any) => React.ReactNode;
   }[];
-  selectedRows: any[];
+  selectedRows?: any[];
 }
 
 const Table: React.FC<TableProps> = ({ columns, fetchData, extraColumns }) => {
@@ -28,13 +27,12 @@ const Table: React.FC<TableProps> = ({ columns, fetchData, extraColumns }) => {
     currentPage: pageQueryParam,
     search: searchQueryParam,
     sortColumn: sortQueryParam,
+    sortDirection: "asc",
   };
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const { data, loading, currentPage, search, sortColumn } = state;
-
-  console.log(data)
 
   const pageSize = 25;
 
@@ -87,18 +85,71 @@ const Table: React.FC<TableProps> = ({ columns, fetchData, extraColumns }) => {
   const handleSortChange = (column: string) => {
     dispatch({
       type: "SET_SORT_COLUMN",
-      payload: column === sortColumn ? "" : column,
+      payload: column === state.sortColumn ? "" : column,
+      sortDirection: state.sortDirection === "asc" ? "desc" : "asc",
     });
   };
 
-  // const handleRowSelect = (id: number) => {
-  //   dispatch({ type: "TOGGLE_ROW_SELECT", payload: id });
-  // };
+  const compareValues = (a: any, b: any) => {
+    console.log(a, b)
+    const multiplier = state.sortDirection === "asc" ? 1 : -1;
+
+    const aValue = a[state.sortColumn];
+    const bValue = b[state.sortColumn];
+
+    if (aValue === undefined || bValue === undefined) {
+      return 0;
+    }
+
+    if (state.sortColumn === "id") {
+      return (aValue - bValue) * multiplier;
+    } else if (typeof aValue === "string" && typeof bValue === "string") {
+      return aValue.localeCompare(bValue) * multiplier;
+    } else {
+      return (aValue < bValue ? -1 : aValue > bValue ? 1 : 0) * multiplier;
+    }
+  };
+  const sortedData = [...data].sort(compareValues);
+
+  const mapApiDataToTableData = (apiData: any[]): any[] => {
+    return apiData.map((item) => mapObjectFields(item));
+  };
+
+  const mapObjectFields = (obj: any): any => {
+    const newObj: any = {};
+
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = mapFieldValue(obj[key]);
+      }
+    }
+
+    return newObj;
+  };
+
+  const mapFieldValue = (value: any): any => {
+    if (Array.isArray(value)) {
+      return value.map((item, index) => (
+        <div key={index}>{mapFieldValue(item)}</div>
+      ));
+    } else if (typeof value === "object" && value !== null) {
+      return Object.keys(value).map((key, index) => (
+        <div key={index}>
+          <strong>{key}: </strong>
+          {mapFieldValue(value[key])}
+        </div>
+      ));
+    }
+
+    return value;
+  };
 
   useEffect(() => {
     const fetchDataAndSetState = async () => {
       dispatch({ type: "SET_LOADING", payload: true });
-      const newData = await fetchData();
+      const rawData =
+        typeof fetchData === "function" ? await fetchData() : await fetchData;
+      const newData = mapApiDataToTableData(rawData);
       dispatch({ type: "SET_DATA", payload: newData });
       dispatch({ type: "SET_LOADING", payload: false });
     };
@@ -183,11 +234,12 @@ const Table: React.FC<TableProps> = ({ columns, fetchData, extraColumns }) => {
                 </button>
               </th>
             ))}
-            {extraColumns.map((extraColumn, index) => (
-              <th key={index} scope="col" className="px-4 py-3 text-center">
-                {extraColumn.header}
-              </th>
-            ))}
+            {extraColumns &&
+              extraColumns.map((extraColumn, index) => (
+                <th key={index} scope="col" className="px-4 py-3 text-center">
+                  {extraColumn.header}
+                </th>
+              ))}
           </thead>
           <tbody className="overflow-y-auto">
             {loading
@@ -206,13 +258,9 @@ const Table: React.FC<TableProps> = ({ columns, fetchData, extraColumns }) => {
                     </td>
                   </tr>
                 ))
-              :
-                data
+              : sortedData
                   .filter((row) =>
                     row.name.toLowerCase().includes(search.toLowerCase())
-                  )
-                  .sort((a, b) =>
-                    sortColumn ? a[sortColumn].localeCompare(b[sortColumn]) : 0
                   )
                   .slice((currentPage - 1) * pageSize, currentPage * pageSize)
                   .map((row) => (
@@ -225,11 +273,12 @@ const Table: React.FC<TableProps> = ({ columns, fetchData, extraColumns }) => {
                           {row[column]}
                         </td>
                       ))}
-                      {extraColumns.map((extraColumn, index) => (
-                        <td className="text-center" key={index}>
-                          {extraColumn.render(row)}
-                        </td>
-                      ))}
+                      {extraColumns &&
+                        extraColumns.map((extraColumn, index) => (
+                          <td className="text-center" key={index}>
+                            {extraColumn.render(row)}
+                          </td>
+                        ))}
                     </tr>
                   ))}
           </tbody>

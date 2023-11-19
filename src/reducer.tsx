@@ -7,14 +7,15 @@ export interface State {
   currentPage: number;
   search: string;
   sortColumn: string;
+  sortDirection: "asc" | "desc";
 }
 
 type Action =
   | { type: "SET_DATA"; payload: any[] }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_CURRENT_PAGE"; payload: number }
-  | { type: "SET_SEARCH"; payload: string }
-  | { type: "SET_SORT_COLUMN"; payload: string }
+  | { type: "SET_SEARCH"; payload: string, }
+  | { type: "SET_SORT_COLUMN"; payload: string, sortDirection: string  }
   | { type: "TOGGLE_ROW_SELECT"; payload: number };
 
 export const reducer: Reducer<State, Action> = (state, action) => {

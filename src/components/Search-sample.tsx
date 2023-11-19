@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useCallback, useState } from "react";
 import CustomTable from "./CustomTable";
+import { Link } from "react-router-dom";
 
 const SearchSample: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
@@ -52,9 +53,10 @@ const SearchSample: React.FC = () => {
     <div className="flex justify-center items-center h-screen w-full">
       <div className=" p-3 sm:p-5 w-full">
         <div className="mx-auto max-w-screen-xl px-4 lg:px-12">
+        <Link className="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2" to="/"> Go Back</Link>
         <h1 className="text-center font-bold">Fetch Sample</h1>
           <CustomTable
-            columns={["name", "category", "brand", "description", "price"]}
+            columns={['id',"name", "category", "brand", "description", "price"]}
             fetchData={fetchData}
             extraColumns={extraColumns}
             selectedRows={selectedRows}
