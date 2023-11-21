@@ -27,3 +27,4 @@ Make sure you have Node.js and npm installed on your machine.
 
 #### Note
 Only the Name column can be search in the search input
+the css and html design is a template tailwind from Flowbite
